@@ -22,12 +22,14 @@ class Drone
 
 public:
 
+    //A vertex on the graph
     struct Travel
     {
         int x = 0, y = 0;
         bool visited = false;
     };
-
+    
+    //Every variable a vertex needs to calculate Prim's
     struct Prims
     {
         double distance = numeric_limits<double>::infinity();
@@ -49,7 +51,8 @@ private:
 
 public:
     char mode;
-
+    
+    //Parses command line arguments
     void getOptions(int argc, char** argv)
     {
         int option_index = 0, option = 0;
@@ -87,6 +90,8 @@ public:
         }
     }
 
+    
+    //Reads in every vertex
     void getCoords()
     {
         bool normal = false, medical = false, border = false;
@@ -101,6 +106,8 @@ public:
         for (int i = 0; i < num; ++i)
         {
             cin >> x >> y;
+            
+            //Necessary variables for MST
             if (mode == 'M')
             {
                 Prims temp;
@@ -121,6 +128,7 @@ public:
                 temp.y = y;
                 prim.push_back(temp);
             }
+            //Necessary variables for TSP
             else
             {
                 Travel temp;
@@ -131,6 +139,7 @@ public:
         }
         if (mode == 'M')
         {
+            //Error if there is a vertex in medical area and normal area, but none on the border
             if (medical && normal && !border)
             {
                 cerr << "Cannot construct MST";
@@ -146,14 +155,16 @@ public:
     }
 
     private:
-
+    
+    //Prim's algorithm to calculate an MST
     double mst()
     {
         vector<pair<int, int>> edges;
         double totDist = 0;
-
+        
         edges.reserve(prim.size() - 1);
         prim[0].distance = 0;
+        
         for (size_t i = 0; i < prim.size(); ++i)
         {
             double minDist = numeric_limits<double>::infinity();
@@ -189,7 +200,8 @@ public:
         }
         return totDist;
     }
-
+    
+    //Nearest insertion of arbitrary city TSP heuristic
     double fast()
     {
         //holds the order of indices in path
@@ -218,6 +230,7 @@ public:
         order.push_back(0);
         order.push_back(int(minDistIdx));
 
+        //Picks random city and inserts it between to connected cities
         for (size_t i = 1; i < path.size(); ++i)
         {
             if (!path[i].visited)
@@ -257,11 +270,14 @@ public:
 
         return totDist;
     }
-
+    
+    //Calculates optimal TSP
     void opt()
     {
         optOrder.resize(path.size());
         iota(optOrder.begin(), optOrder.end(), 0);
+        
+        //Uses TSP heuristic find initial shortest distance
         bestOptDist = fast();
         genPerms(1);
 
@@ -270,7 +286,8 @@ public:
             cout << bestPath[i] << " ";
     }
 
-
+    //Calculates clostest vertex by comparing distance to every other vertex
+    //For MST only
     void distA(int idx)
     {
         Prims vert = prim[idx];
@@ -292,17 +309,18 @@ public:
             }
         }
     }
-
+    
+    //Distance function for OPTTSP and FASTTSP
     double getDist(int idx1, int idx2)
     {
         double x1 = path[idx1].x, y1 = path[idx1].y;
         double x2 = path[idx2].x, y2 = path[idx2].y;
         return sqrt(((x2 - x1) * (x2 - x1)) + ((y2 - y1) * (y2 - y1)));
     }
-
+    
+    //Branch and bound of optimal TSP order
     void genPerms(size_t permLength) {
         if (permLength == optOrder.size()) {
-            // Do something with the path
             {
                 double temp = getDist(0, int(optOrder[permLength - 1])) + totOptDist;
                 if (temp < bestOptDist)
@@ -313,6 +331,7 @@ public:
                 return;
             }
         } // if
+        
         if (!promising(permLength))
             return;
         for (size_t i = permLength; i < path.size(); ++i) {
@@ -332,7 +351,8 @@ public:
             prim[i - permLength] = Prims(path[optOrder[i]]);
         }
     }
-
+    
+    //Determines if distance is lower than upper bound
     bool promising(size_t permLength)
     {
         if (optOrder.size() - permLength > 6)
